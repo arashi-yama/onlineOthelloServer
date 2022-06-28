@@ -3,19 +3,6 @@ export class Othello {
     this.order = 1;
     this.color = [null, 'black', 'white'];
     this.history = [];
-    this.board = [
-      [0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 1, 2, 0, 0, 0],
-      [0, 0, 0, 2, 1, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0],
-    ];
-  }
-  setHistory(his) {
-    this.history = his
   }
   writeOn(canvasElement) {
     this.canvas = canvasElement;
@@ -23,19 +10,27 @@ export class Othello {
     this.size = Math.min(canvasElement.height, canvasElement.width);
     this.pixcel = this.size / 8;
     this.backgroundColor = 'green';
+    this.board = [
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 2, 1, 0, 0, 0],
+      [0, 0, 0, 1, 2, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
     this.clickEvent = (e) => {
       this.mouseX = Math.floor(e.offsetX / this.pixcel);
       this.mouseY = Math.floor(e.offsetY / this.pixcel);
-      /*
       if (0 <= this.mouseX <= 8 && 0 <= this.mouseY <= 8) {
         this.putOn(this.mouseX, this.mouseY);
         this.readHistry();
-      }*/
+      }
+      console.log(
+        '[' + this.history.map((v) => `[${v.join(',')}]`).join(',') + ']'
+      );
     };
-    this.canvas.addEventListener("mousemove", (e) => {
-      this.mouseX = Math.floor(e.offsetX / this.pixcel);
-      this.mouseY = Math.floor(e.offsetY / this.pixcel);
-    })
     return this;
   }
   get winner() {
@@ -44,14 +39,16 @@ export class Othello {
         if (this.win == 'decide') {
           let white = 0;
           let black = 0;
-          this.board.reduce((a, b) => [...a, ...b]).forEach((v) => {
-            if (v === 1) {
-              black++;
-            }
-            if (v === 2) {
-              white++;
-            }
-          });
+          this.board
+            .reduce((a, b) => [...a, ...b])
+            .forEach((v) => {
+              if (v === 1) {
+                black++;
+              }
+              if (v === 2) {
+                white++;
+              }
+            });
           if (white < black) {
             resolve('black');
           }
@@ -88,7 +85,6 @@ export class Othello {
   }
   drow() {
     if (!this.canvas) return this;
-    this.canvas.style["z-index"]=10
     this.drowGrid();
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
@@ -173,8 +169,8 @@ export class Othello {
       [0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 1, 2, 0, 0, 0],
       [0, 0, 0, 2, 1, 0, 0, 0],
+      [0, 0, 0, 1, 2, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
@@ -191,20 +187,15 @@ export class Othello {
     ];
     for (let i = 0; i < this.history.length; i++) {
       let vs = this.canPutAt(...this.history[i], (i % 2) + 1);
-      /*
       if (!vs.map((v) => v[0]).includes(true)) {
-        throw new Error(
+        alert(
           `cannnot put ${this.color[(i % 2) + 1]} on (${this.history[i][0]},${
             this.history[i][1]
           })`
         );
-        alert(
-          `cannnot put ${this.color[(i % 2) + 1]} on (${this.history[i][0]},${this.history[i][1]
-          })`
-        );
         this.history.pop();
         return this;
-      }*/
+      }
       for (let k = 0; k < vs.length; k++) {
         let co = coo[k];
         for (let l = 0; l <= vs[k][1]; l++) {
@@ -218,25 +209,34 @@ export class Othello {
         this.ctx.fillRect(0, 0, this.size, this.size);
         this.drow();
       }
-      //this.board.map((value, i) =>value.map((_, j) =>[...this.canPutAt(i, j, 1), ...this.canPutAt(i, j, 2)].map((v) => v[0])).reduce((a, b) => [...a, ...b])).reduce((a, b) => [...a, ...b]);
-      if (
-        !this.board
-          .map((value, i) =>
-            value
-              .map((_, j) =>
-                this.canPutAt(i, j, (this.history.length % 2) + 1).map(
-                  (v) => v[0]
-                )
-              )
-              .reduce((a, b) => [...a, ...b])
-          )
-          .reduce((a, b) => [...a, ...b])
-          .includes(true)
-      )
-        this.win = 'decide';
     }
+    if (
+      this.getPutablePlace((this.history.length % 2) + 1).length === 0 ||
+      (this.getPutablePlace(1).length === 0 &&
+        this.getPutablePlace(2).length === 0)
+    )
+      this.win = 'decide';
+
     return this;
   }
+  getPutablePlace(color) {
+    const result = [];
+    this.board.forEach((arr, y) => {
+      arr.forEach((v, x) => {
+        if (this.at(x, y) !== 0) return;
+
+        if (
+          this.canPutAt(x, y, color)
+            .map((v) => v[0])
+            .includes(true)
+        ) {
+          result.push([x, y]);
+        }
+      });
+    });
+    return result;
+  }
+
   drowGrid() {
     if (!this.canvas) return this;
     this.ctx.fillStyle = this.backgroundColor;
