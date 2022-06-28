@@ -70,6 +70,6 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/page/index.js")
     res.sendFile(__dirname + "/page/frontOthelloClass.js")
 })
-server.listen(3000, () => {
+server.listen(process.env.POST||3000, () => {
     console.log("app is running")
 })
