@@ -3,7 +3,6 @@ const app = express()
 const http = require("http")
 const server = http.createServer(app)
 var io = require("socket.io")(server)
-const { Othello } = require("./othelloClass.js")
 app.use(express.json())
 app.use(express.static("page"))
 let rooms = []
@@ -55,7 +54,7 @@ io.on('connection', (socket) => {
     })
     socket.on("put", (roomid, x, y) => {
         console.log("put", roomid, x, y)
-        if(rooms[roomid]===null)return
+        if(!rooms[roomid])return
         rooms[roomid].othelloHistory.push([x, y])
         let user = rooms[roomid].othelloHistory.length % 2
         console.log(rooms[roomid].users[user].userId)
@@ -67,7 +66,9 @@ io.on('connection', (socket) => {
     })
 });
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/page/index.html");
+    res.sendFile(__dirname + "/page/index.html")
+    res.sendFile(__dirname + "/page/index.js")
+    res.sendFile(__dirname + "/page/frontOthelloClass.js")
 })
 server.listen(3000, () => {
     console.log("app is running")
