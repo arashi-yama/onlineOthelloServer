@@ -4,7 +4,7 @@ const http = require("http")
 const server = http.createServer(app)
 var io = require("socket.io")(server)
 app.use(express.json())
-app.use(express.static("pages"))
+app.use(express.static(__dirname+"/pages"))
 let rooms = []
 io.on('connection', (socket) => {
     console.log(`a user ${socket.id} connected`);
