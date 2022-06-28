@@ -4,7 +4,7 @@ const http = require("http")
 const server = http.createServer(app)
 var io = require("socket.io")(server)
 app.use(express.json())
-app.use(express.static("page"))
+app.use(express.static("pages"))
 let rooms = []
 io.on('connection', (socket) => {
     console.log(`a user ${socket.id} connected`);
@@ -68,8 +68,8 @@ io.on('connection', (socket) => {
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/pages/index.html")
     res.sendFile(__dirname + "/pages/index.js")
-    res.sendFile(__dirname + "/pages/frontOthelloClass.js")
+    res.sendFile(__dirname + "/pages/othello.js")
 })
-.listen(process.env.POST||3000, () => {
+server.listen(process.env.POST||3000, () => {
     console.log("app is running")
 })
