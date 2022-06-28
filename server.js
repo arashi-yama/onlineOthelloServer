@@ -70,6 +70,6 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/pages/index.js")
     res.sendFile(__dirname + "/pages/othello.js")
 })
-server.listen(process.env.POST||3000, () => {
-    console.log("app is running")
+server.listen(process.env.PORT||3000, () => {
+    console.log("app is running on")
 })
