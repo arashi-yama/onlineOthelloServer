@@ -66,9 +66,9 @@ io.on('connection', (socket) => {
     })
 });
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/page/index.html")
-    res.sendFile(__dirname + "/page/index.js")
-    res.sendFile(__dirname + "/page/frontOthelloClass.js")
+    res.sendFile(__dirname + "/pages/index.html")
+    res.sendFile(__dirname + "/pages/index.js")
+    res.sendFile(__dirname + "/pages/frontOthelloClass.js")
 })
 .listen(process.env.POST||3000, () => {
     console.log("app is running")
