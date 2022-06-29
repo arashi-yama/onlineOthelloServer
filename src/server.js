@@ -4,17 +4,26 @@ const http = require("http")
 const server = http.createServer(app)
 const io = require("socket.io")(server)
 const sqlite3=require("sqlite3")
+const fs=require("fs")
+if(!fs.existsSync("./history.db")){
+  fs.writeFileSync("./history.db","")
+}
 const db=new sqlite3.Database("./history.db")
 const {Room}=require("./room.js")
 
+!(async function(){
+  await new Promise((res,rej)=>{
+    db.run("create table if not exists history (id int, create_at date, data string)",(err)=>{
+      if(err)return rej(err)
+      return res()
+    })
+  })
 
-db.run("create table if not exists history (id int, create_at date, data string)");
-(async function(){
   const len=await new Promise((res,rej)=>{
     db.each("select max(id) from history",(err,row)=>{
-      if(err)rej(err)
-      console.log(row)
-      res(row["max(id)"]||0)
+      if(err)return rej(err)
+      if(!row)return res(0)
+      res(row["max(id)"])
     })
   })
   app.use(express.json())
