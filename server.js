@@ -2,74 +2,90 @@ const express = require("express")
 const app = express()
 const http = require("http")
 const server = http.createServer(app)
-var io = require("socket.io")(server)
-app.use(express.json())
-app.use(express.static(__dirname+"/pages"))
-let rooms = []
-io.on('connection', (socket) => {
-    console.log(`a user ${socket.id} connected`);
-    socket.on('buildroom', (username, name, pass) => {
-        if (rooms.map(e => e.name).includes(name)) {
-            socket.emit("buildroomFailure", `Cannot build room because ${name} has been used`)
-            return
-        }
-        let roomIndex = rooms.length
-        rooms.push({
-            name: name,
-            users: [{
-                username: username,
-                userId: socket.id
-            }],
-            pass: pass,
-            othelloHistory: [],
-            index: roomIndex
-        })
-        socket.emit("buildroomSuccess", `built a room at ${roomIndex}`, roomIndex)
-        socket.join(roomIndex)
-    })
+const io = require("socket.io")(server)
+const sqlite3=require("sqlite3")
+const db=new sqlite3.Database("./history.db")
+const {Room}=require("./room.js")
 
-    socket.on("joinroom", (username, name, pass) => {
-        let room = rooms.find((v) => v.name == name)
-        let roomIndex = rooms.findIndex((v) => v.name == name)
-        if (room === undefined) {
-            socket.emit("joinroomFailure", `${name} is undefined`)
-            return
-        }
-        if (room.pass !== pass) {
-            socket.emit("joinroomFailure", "pass is wrong")
-            return
-        }
-        if (room.users.length === 2) {
-            socket.emit("joinroomFailure", "room is crowded")
-            return
-        }
-        room.users.push({
-            username: username,
-            userId: socket.id
-        })
-        socket.emit("joinroomSuccess", `joined a room at ${roomIndex}`, roomIndex, room.users[0].username)
-        socket.join(roomIndex)
-        io.to(room.users[0].userId).emit("joined", username)
-        io.to(roomIndex).emit("start")
+
+db.run("create table if not exists history (id int, create_at date, data string)");
+(async function(){
+  const len=await new Promise((res,rej)=>{
+    db.each("select max(id) from history",(err,row)=>{
+      if(err)rej(err)
+      console.log(row)
+      res(row["max(id)"]||0)
     })
-    socket.on("put", (roomid, x, y) => {
-        console.log("put", roomid, x, y)
-        if(!rooms[roomid])return
-        rooms[roomid].othelloHistory.push([x, y])
-        let user = rooms[roomid].othelloHistory.length % 2
-        console.log(rooms[roomid].users[user].userId)
-        io.to(rooms[roomid].users[user].userId).emit("put", x, y)
-        io.to(rooms[roomid].index).emit("history", rooms[roomid].othelloHistory)
+  })
+  app.use(express.json())
+  app.use(express.static(__dirname + "/pages"))
+  /**
+   * @type {Room[]}
+   */
+  const rooms = Array(len).fill(null)
+  io.on('connection', (socket) => {
+    socket.on('buildroom', (username, roomname, pass) => {
+      if (rooms.map(room => room&&room.roomname).includes(roomname)) {
+        socket.emit("buildroomFailure", `Cannot build room because ${roomname} has been used`)
+        return
+      }
+      let roomIndex = rooms.length
+      rooms.push(new Room(roomname,username,socket.id,pass,roomIndex))
+      socket.emit("buildroomSuccess", `built a room at ${roomIndex}`, roomIndex)
+      socket.join(roomIndex)
     })
-    socket.on("end",(roomid)=>{
-        rooms[roomid]=null
+  
+    socket.on("joinroom", (username, roomname, pass) => {
+      const room = rooms.find(room => room&&room.roomname == roomname)
+      const roomIndex = room.index
+      if (room === undefined) {
+        socket.emit("joinroomFailure", `${roomname} does not exist`)
+        return
+      }
+      if (room.pass !== pass) {
+        socket.emit("joinroomFailure", "pass is wrong")
+        return
+      }
+      if (room.users.length === 2) {
+        socket.emit("joinroomFailure", "room is crowded")
+        return
+      }
+      room.addUser({
+        username,
+        userId:socket.id
+      })
+      socket.emit("joinroomSuccess", `joined a room at ${roomIndex}`, roomIndex, room.users[0].username)
+      socket.join(roomIndex)
+      io.to(room.users[0].userId).emit("joined", username)
+      io.to(roomIndex).emit("start")
     })
-});
-app.get("/", (req, res) => {
+    socket.on("put", (roomId, x, y) => {
+      const room=rooms[roomId]
+      if (!room) return
+      room.addHistory([x,y])
+      const user=room.history.length%2
+      io.to(room.users[user].userId).emit("put", x, y)
+      io.to(room.index).emit("history", room.history)
+      console.log(room)
+    })
+    socket.on("end", async (roomid) => {
+      let sql=`insert into history (id,create_at,data) values (${roomid},datetime('now'),"${rooms[roomid].history.map(v=>v.join(",")).join(" ")}")`
+      console.log(sql)
+      db.run(sql)
+      rooms[roomid] = null
+    })
+  })
+  app.get("/", (req, res) => {
     res.sendFile(__dirname + "/pages/index.html")
     res.sendFile(__dirname + "/pages/index.js")
     res.sendFile(__dirname + "/pages/othello.js")
-})
-server.listen(process.env.PORT||3000, () => {
-    console.log("app is running on")
-})
+  })
+  
+  app.get("/history", (req, res) => {
+    
+  })
+  
+  server.listen(process.env.PORT || 3000, () => {
+    console.log("app is running")
+  })
+})()

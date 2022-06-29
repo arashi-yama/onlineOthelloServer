@@ -123,5 +123,5 @@ othello.winner.then((winner) => {
   othello.disableClickToPut()
   log(`winner is ${winner}`)
   document.getElementById("turn").innerText = `winner is ${winner}\nif you want to play again,please reload`
-  socket.emit("end", getRoomId())
+  if(color===1)socket.emit("end", roomId)
 })
