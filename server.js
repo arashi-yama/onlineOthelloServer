@@ -10,7 +10,7 @@ if(!fs.existsSync("./history.db")){
 }
 const db=new sqlite3.Database("./history.db")
 const {Room}=require("./room.js")
-
+app.use(express.static(__dirname+"/page/dist"))
 !(async function(){
   await new Promise((res,rej)=>{
     db.run("create table if not exists history (id int, create_at date, data string)",(err)=>{
@@ -19,34 +19,36 @@ const {Room}=require("./room.js")
     })
   })
 
-  const len=await new Promise((res,rej)=>{
+  const len=0??await new Promise((res,rej)=>{
     db.each("select max(id) from history",(err,row)=>{
       if(err)return rej(err)
       if(!row)return res(0)
       res(row["max(id)"])
     })
   })
-  app.use(express.json())
-  app.use(express.static(__dirname + "/pages"))
+  
   /**
    * @type {Room[]}
    */
   const rooms = Array(len).fill(null)
   io.on('connection', (socket) => {
-    socket.on('buildroom', (username, roomname, pass) => {
+    console.log("connected")
+    socket.on('buildroom', ({username, roomname, pass}) => {
+      console.log(username, roomname,pass)
       if (rooms.map(room => room&&room.roomname).includes(roomname)) {
         socket.emit("buildroomFailure", `Cannot build room because ${roomname} has been used`)
         return
       }
-      let roomIndex = rooms.length
-      rooms.push(new Room(roomname,username,socket.id,pass,roomIndex))
-      socket.emit("buildroomSuccess", `built a room at ${roomIndex}`, roomIndex)
-      socket.join(roomIndex)
+      const roomId = rooms.length
+      rooms.push(new Room(roomname,username,socket.id,pass,roomId))
+      socket.emit("buildroomSuccess",roomId)
+      socket.join(roomId)
     })
   
-    socket.on("joinroom", (username, roomname, pass) => {
+    socket.on("joinroom", ({username, roomname, pass}) => {
+      console.log(rooms)
+      console.log(username,roomname,pass)
       const room = rooms.find(room => room&&room.roomname == roomname)
-      const roomIndex = room.index
       if (room === undefined) {
         socket.emit("joinroomFailure", `${roomname} does not exist`)
         return
@@ -63,10 +65,10 @@ const {Room}=require("./room.js")
         username,
         userId:socket.id
       })
-      socket.emit("joinroomSuccess", `joined a room at ${roomIndex}`, roomIndex, room.users[0].username)
-      socket.join(roomIndex)
+      socket.emit("joinroomSuccess",{roomId:room.id,opponent:room.users[0].username})
+      socket.join(room.id)
       io.to(room.users[0].userId).emit("joined", username)
-      io.to(roomIndex).emit("start")
+      io.to(room.id).emit("start")
     })
     socket.on("put", (roomId, x, y) => {
       const room=rooms[roomId]
@@ -85,16 +87,10 @@ const {Room}=require("./room.js")
     })
   })
   app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/pages/index.html")
-    res.sendFile(__dirname + "/pages/index.js")
-    res.sendFile(__dirname + "/pages/othello.js")
+    res.sendFile(__dirname+"/page/dist/index.html")
   })
   
-  app.get("/history", (req, res) => {
-    
-  })
-  
-  server.listen(process.env.PORT || 3000, () => {
-    console.log("app is running")
+  server.listen(process.env.PORT || 5000, () => {
+    console.log("app is running\nhttp://localhost:5000")
   })
 })()

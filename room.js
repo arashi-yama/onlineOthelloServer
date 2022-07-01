@@ -1,5 +1,5 @@
 class Room{
-  constructor(roomname,username,userId,pass,index){
+  constructor(roomname,username,userId,pass,id){
     this.roomname=roomname
     this.users=[{
       username,
@@ -7,7 +7,7 @@ class Room{
     }]
     this.pass=pass
     this.history=[]
-    this.index=index
+    this.id=id
   }
 
   addUser(user){
