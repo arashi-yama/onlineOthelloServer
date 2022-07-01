@@ -4,8 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build":"cd page && npm run build && cd ../ && node server.js"
+    "start":"cd page && npm run build && cd ../ && node server.js"
   },
   "author": "",
   "license": "ISC",

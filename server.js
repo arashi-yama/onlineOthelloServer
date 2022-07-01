@@ -71,13 +71,13 @@ app.use(express.static(__dirname+"/page/dist"))
       io.to(room.id).emit("start")
     })
     socket.on("put", (roomId, x, y) => {
+      console.log(roomId,x,y)
       const room=rooms[roomId]
       if (!room) return
       room.addHistory([x,y])
       const user=room.history.length%2
       io.to(room.users[user].userId).emit("put", x, y)
-      io.to(room.index).emit("history", room.history)
-      console.log(room)
+      io.to(roomId).emit("history", room.history)
     })
     socket.on("end", async (roomid) => {
       let sql=`insert into history (id,create_at,data) values (${roomid},datetime('now'),"${rooms[roomid].history.map(v=>v.join(",")).join(" ")}")`
