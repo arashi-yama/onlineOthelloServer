@@ -3,7 +3,8 @@ import { render } from 'solid-js/web'
 import {io} from "socket.io-client"
 import Othello from "./othello.js"
 
-const soket=io()
+let soket=io()
+
 function App(){
   const [state,setState]=createSignal("origin")
   const [opponent,setOpponent]=createSignal("")
@@ -11,6 +12,17 @@ function App(){
   const [myTurn,setTurn]=createSignal(false)
   const [color,setColor]=createSignal(0)
   const [winner,setWinner]=createSignal()
+  const [count,setCount]=createSignal(false)
+  const toggle=()=>setCount(()=>!count())
+  const init=()=>{
+    setOpponent("")
+    setRoomId()
+    setTurn(false)
+    setColor(0)
+    setWinner()
+    setCount(false)
+    soket=io()
+  }
   let canvas
   let othello
 
@@ -71,15 +83,6 @@ function App(){
     if(!roomname)return
     soket.emit("buildroom",{username,roomname,pass})
     soket.once("buildroomSuccess",roomId=>{
-      soket.once("start",()=>{
-        othello.enableClickToPut()
-        othello.winner.then(winner=>{
-          console.log(othello.roomId)
-          console.log("winner is "+winner)
-          soket.emit("end",othello.roomId)
-          setWinner(winner)
-        })
-      })
       soket.once("joined",opp=>setOpponent(opp))
       setState("game")
       setColor(1)
@@ -98,9 +101,6 @@ function App(){
     const pass=passElm&&passElm.value||null
     soket.emit("joinroom",{username,roomname,pass})
     soket.once("joinroomSuccess",({roomId,opponent})=>{
-      soket.once("start",()=>othello.winner.then(winner=>{
-        setWinner(winner)
-      }))
       setColor(2)
       setOpponent(opponent)
       setState("game")
@@ -112,11 +112,19 @@ function App(){
       alert(message)
     })
   }
+  soket.once("start",()=>{
+    othello.enableClickToPut()
+    othello.winner.then(winner=>{
+      othello.disableClickToPut()
+      if(color()===1)soket.emit("end",othello.roomId)
+      setWinner(winner)
+    })
+  })
+
   const toHistory=()=>{
     setStatePre("history")
   }
-  const [count,setCount]=createSignal(false)
-  const toggle=()=>setCount(()=>!count())
+  
   return (
   <Switch>
     <Match when={state()==="origin"}>
@@ -149,7 +157,7 @@ function App(){
         <Show when={color()}>
           <h2>{"your are "+[null,"black","white"][color()]}</h2>
         </Show>
-        <Show when={myTurn()} fallback={<Show when={winner()} fallback={<h2>{opponent()}'s turn</h2>}><h2>winner is {winner()}</h2></Show>}>
+        <Show when={myTurn()} fallback={<Show when={winner()} fallback={<h2>{opponent()}'s turn</h2>}><h2>winner is {winner()}</h2><a href={window.location.href}>back to home</a></Show>}>
           <h2>your turn</h2>
         </Show>
       </div>

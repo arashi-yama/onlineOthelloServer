@@ -1,5 +1,5 @@
 class Room{
-  constructor(roomname,username,userId,pass,id){
+  constructor(roomname,username,userId,pass){
     this.roomname=roomname
     this.users=[{
       username,
@@ -7,7 +7,6 @@ class Room{
     }]
     this.pass=pass
     this.history=[]
-    this.id=id
   }
 
   addUser(user){
@@ -21,5 +20,25 @@ class Room{
 
 }
 
-exports.Room=Room
+class Rooms extends Map{
+  constructor(oldestId){
+    super()
+    this.oldestId=oldestId
+    this.nextId=oldestId+1
+  }
+  add(value){
+    super.set(this.nextId,value)
+    this.oldestId++
+    this.nextId++
+  }
+  findKey(fun){
+    const entries=this.entries()
+    for(const [key,value] of entries){
+      if(fun(value))return key
+    }
+  }
+}
 
+module.exports={
+  Room,Rooms
+}
