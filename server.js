@@ -34,7 +34,6 @@ app.use(express.static(__dirname+"/page/dist"))
   io.on('connection', (socket) => {
     console.log("connected")
     socket.on('buildroom', ({username, roomname, pass}) => {
-      console.log(username, roomname,pass)
       if (rooms.map(room => room&&room.roomname).includes(roomname)) {
         socket.emit("buildroomFailure", `Cannot build room because ${roomname} has been used`)
         return
@@ -46,8 +45,6 @@ app.use(express.static(__dirname+"/page/dist"))
     })
   
     socket.on("joinroom", ({username, roomname, pass}) => {
-      console.log(rooms)
-      console.log(username,roomname,pass)
       const room = rooms.find(room => room&&room.roomname == roomname)
       if (room === undefined) {
         socket.emit("joinroomFailure", `${roomname} does not exist`)
@@ -71,7 +68,6 @@ app.use(express.static(__dirname+"/page/dist"))
       io.to(room.id).emit("start")
     })
     socket.on("put", (roomId, x, y) => {
-      console.log(roomId,x,y)
       const room=rooms[roomId]
       if (!room) return
       room.addHistory([x,y])
@@ -79,11 +75,12 @@ app.use(express.static(__dirname+"/page/dist"))
       io.to(room.users[user].userId).emit("put", x, y)
       io.to(roomId).emit("history", room.history)
     })
-    socket.on("end", async (roomid) => {
-      let sql=`insert into history (id,create_at,data) values (${roomid},datetime('now'),"${rooms[roomid].history.map(v=>v.join(",")).join(" ")}")`
+    socket.on("end",roomId => {
+      console.log("end",roomId)
+      let sql=`insert into history (id,create_at,data) values (${roomId},datetime('now'),"${rooms[roomId].history.map(v=>v.join(",")).join(" ")}")`
       console.log(sql)
       db.run(sql)
-      rooms[roomid] = null
+      rooms[roomId] = null
     })
   })
   app.get("/", (req, res) => {

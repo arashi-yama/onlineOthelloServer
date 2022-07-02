@@ -167,7 +167,7 @@ export default class Othello {
       [0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 2, 1, 0, 0, 0],
-      [0, 0, 0, 1, 2, 0, 0, 0],
+      [0, 0, 0, 1, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0],
@@ -184,7 +184,7 @@ export default class Othello {
     ];
     for (let i = 0; i < this.history.length; i++) {
       let vs = this.canPutAt(...this.history[i], (i % 2) + 1);
-      if (!vs.map((v) => v[0]).includes(true)) {
+      if (!vs.map((v) => v[0]).includes(true)){
         this.history.pop();
         return this;
       }

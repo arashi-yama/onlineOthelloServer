@@ -1,60 +1,89 @@
-/* @refresh reload */
 import { createEffect,createSignal ,Show,Switch,Match,on} from 'solid-js'
 import { render } from 'solid-js/web'
 import {io} from "socket.io-client"
 import Othello from "./othello.js"
-let color=0
-class OnlineOthello extends Othello{
-  writeOn(canvas){
-    super.writeOn(canvas)
-    canvas.height=this.size
-    canvas.width=this.size
-    this.clickEvent=(e)=>{
-      this.mouseX = Math.floor(e.offsetX / this.pixcel)
-      this.mouseY = Math.floor(e.offsetY / this.pixcel)
-      if (0 <= this.mouseX <= 8 && 0 <= this.mouseY <= 8) {
-        this.putOn(this.mouseX, this.mouseY)
-        this.readHistory()
-        soket.emit("put",this.roomId,this.mouseX,this.mouseY)
-        this.disableClickToPut()
-      }
-    }
-    return this
-  }
-}
+
 const soket=io()
-//null black white
 function App(){
   const [state,setState]=createSignal("origin")
   const [opponent,setOpponent]=createSignal("")
   const [roomId,setRoomId]=createSignal()
+  const [myTurn,setTurn]=createSignal(false)
+  const [color,setColor]=createSignal(0)
+  const [winner,setWinner]=createSignal()
   let canvas
   let othello
+
+  class OnlineOthello extends Othello{
+    writeOn(canvas){
+      super.writeOn(canvas)
+      this.clickEvent=(e)=>{
+        this.pixcel=this.size/8
+        this.size = Math.min(canvas.height, canvas.width)
+        this.mouseX = Math.floor(e.offsetX / (this.pixcel))
+        this.mouseY = Math.floor(e.offsetY / (this.pixcel))
+        if (0 <= this.mouseX <= 8 && 0 <= this.mouseY <= 8){
+          console.log(this.mouseX,this.mouseY)
+          if(!this.getPutablePlace(color()).some(([x,y])=>x===this.mouseX&&y===this.mouseY))return console.log("cannot put")
+          this.putOn(this.mouseX, this.mouseY)
+          this.readHistory()
+          soket.emit("put",this.roomId,this.mouseX,this.mouseY)
+          this.disableClickToPut()
+        }
+      }
+      return this
+    }
+    enableClickToPut(){
+      if (!this.canvas) return this;
+      this.canvas.addEventListener('click', this.clickEvent);
+      setTurn(true) 
+      return this;
+    }
+    disableClickToPut(){
+      if(!this.canvas)return this;
+      this.canvas.removeEventListener("click",this.clickEvent)
+      setTurn(false)
+      return true
+    }
+  }
+
   createEffect(on(state,state=>{
     if(state!=="game")return
-    canvas.width=innerWidth*2/3
-    canvas.height=innerHeight*2/3
+    const canvasSize=Math.min(innerHeight,innerWidth)*2/3
+    canvas.width=canvasSize
+    canvas.height=canvasSize
     othello=new OnlineOthello().writeOn(canvas)
     othello.readHistory().drow()
     soket.on("history",history=>{
       othello.history=history
-      othello.readHistory().drow().enableClickToPut()
+      othello.readHistory().drow()
     })
-    soket.on("put",console.log)
+    soket.on("put",()=>{
+      othello.enableClickToPut()
+    })
   }))
+  
   const buildRoom=()=>{
-    const username=document.getElementById("username").value
+    const username=document.getElementById("username").value||"Anonymous"
     const roomname=document.getElementById("roomname").value
     const passElm=document.getElementById("passward")
     const pass=passElm&&passElm.value||null
-    if(!username)return
     if(!roomname)return
     soket.emit("buildroom",{username,roomname,pass})
     soket.once("buildroomSuccess",roomId=>{
-      soket.once("start",()=>othello.enableClickToPut())
+      soket.once("start",()=>{
+        othello.enableClickToPut()
+        othello.winner.then(winner=>{
+          console.log(othello.roomId)
+          console.log("winner is "+winner)
+          soket.emit("end",othello.roomId)
+          setWinner(winner)
+        })
+      })
       soket.once("joined",opp=>setOpponent(opp))
       setState("game")
-      color=1
+      setColor(1)
+      setTurn(true)
       othello.roomId=roomId
       setRoomId(roomId)
     })
@@ -63,16 +92,19 @@ function App(){
     })
   }
   const joinRoom=()=>{
-    const username=document.getElementById("username").value
+    const username=document.getElementById("username").value||"Anonymous"
     const roomname=document.getElementById("join_roomname").value
     const passElm=document.getElementById("join_passward")
     const pass=passElm&&passElm.value||null
     soket.emit("joinroom",{username,roomname,pass})
     soket.once("joinroomSuccess",({roomId,opponent})=>{
-      soket.once("start",()=>othello)
-      color=2
+      soket.once("start",()=>othello.winner.then(winner=>{
+        setWinner(winner)
+      }))
+      setColor(2)
       setOpponent(opponent)
       setState("game")
+      setTurn(false)
       othello.roomId=roomId
       setRoomId(roomId)
     })
@@ -107,11 +139,21 @@ function App(){
       </div>
     </Match>
     <Match when={state()==="game"}>
-      <h2>room id:{roomId}</h2>
-      <h2>opponent:{opponent}</h2>
-      <div  style={{display:"flex","justify-content":"Center"}}>
-        <canvas id="canvas" ref={canvas}></canvas>
+      <div style={{width:"30%","backgroundColor":"blue"}}>
+        <Show when={roomId}>
+          <h2>{"room id: "+roomId()}</h2>
+        </Show>
+        <Show when={opponent}>
+          <h2>{"opponent: "+opponent()}</h2>
+        </Show>
+        <Show when={color()}>
+          <h2>{"your are "+[null,"black","white"][color()]}</h2>
+        </Show>
+        <Show when={myTurn()} fallback={<Show when={winner()} fallback={<h2>{opponent()}'s turn</h2>}><h2>winner is {winner()}</h2></Show>}>
+          <h2>your turn</h2>
+        </Show>
       </div>
+      <canvas ref={canvas}></canvas>
     </Match>
   </Switch>
   )
