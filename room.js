@@ -23,7 +23,7 @@ class Room{
 class Rooms extends Map{
   constructor(oldestId){
     super()
-    this.oldestId=oldestId
+    this.oldestId=oldestId||0
     this.nextId=oldestId+1
   }
   add(value){
