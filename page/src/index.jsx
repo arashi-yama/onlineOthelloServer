@@ -151,11 +151,11 @@ function App(){
     if(historyId==="")return
     historyId=historyId-0
     if(Number.isNaN(historyId))return
-    setState("history")
     soket.emit("showHistory",historyId)
     soket.once("showHistorySuccess",({id,create_at,data})=>{
       setHistory(data)
       console.log(id,create_at,data)
+      setState("history")
     })
   }
   
