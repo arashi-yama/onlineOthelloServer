@@ -15,8 +15,13 @@ function App(){
   const [count,setCount]=createSignal(false)
   const [history,setHistory]=createSignal()
   const [hisIndex,setHisIndex]=createSignal(0)
+  const [waiting,setWaiting]=createSignal(0)
   const toggle=()=>setCount(()=>!count())
-  
+  const clacWaiting=()=>{
+    const pre=waiting()
+    if(pre===3)return setWaiting(0)
+    setWaiting(pre+1)
+  }
   let canvas
   let othello
   let hisCanvas
@@ -99,7 +104,11 @@ function App(){
     if(!roomname)return
     soket.emit("buildroom",{username,roomname,pass})
     soket.once("buildroomSuccess",roomId=>{
-      soket.once("joined",opp=>setOpponent(opp))
+      let timerId=setInterval(clacWaiting,400)
+      soket.once("joined",opp=>{
+        setOpponent(opp)
+        clearInterval(timerId)
+      })
       setState("game")
       setColor(1)
       setTurn(true)
@@ -129,7 +138,7 @@ function App(){
     })
   }
   soket.once("start",()=>{
-    othello.enableClickToPut()
+    if(myTurn())othello.enableClickToPut()
     othello.winner.then(winner=>{
       othello.disableClickToPut()
       if(color()===1)soket.emit("end",othello.roomId)
@@ -173,17 +182,17 @@ function App(){
     </Match>
     <Match when={state()==="game"}>
       <div style={{width:"30%","backgroundColor":"blue"}}>
-        <Show when={roomId}>
+        <Show when={roomId()!==undefined}>
           <h2>{"room id: "+roomId()}</h2>
-        </Show>
-        <Show when={opponent}>
-          <h2>{"opponent: "+opponent()}</h2>
         </Show>
         <Show when={color()}>
           <h2>{"your are "+[null,"black","white"][color()]}</h2>
         </Show>
-        <Show when={myTurn()} fallback={<Show when={winner()} fallback={<h2>{opponent()}'s turn</h2>}><h2>winner is {winner()}</h2><a href={window.location.href}>back to home</a></Show>}>
-          <h2>your turn</h2>
+        <Show when={opponent()} fallback={<h2>waiting for opponent{".".repeat(waiting())}</h2>}>
+          <h2>{"opponent: "+opponent()}</h2>
+          <Show when={myTurn()} fallback={<Show when={winner()} fallback={<h2>{opponent()}'s turn</h2>}><h2>winner is {winner()}</h2><a href={window.location.href}>back to home</a></Show>}>
+            <h2>your turn</h2>
+          </Show>
         </Show>
       </div>
       <canvas ref={canvas} id="canvas"></canvas>

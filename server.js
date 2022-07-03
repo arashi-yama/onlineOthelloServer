@@ -27,9 +27,7 @@ app.use(express.static(__dirname+"/page/dist"))
     })
   })
   
-  /**
-   * @type {Room[]}
-   */
+  
   const rooms=new Rooms(oldestId)
   console.log(rooms)
   io.on('connection', (socket) => {
