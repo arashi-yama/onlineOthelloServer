@@ -38,8 +38,6 @@ function App(){
         if (0 <= this.mouseX <= 8 && 0 <= this.mouseY <= 8){
           console.log(this.mouseX,this.mouseY)
           if(!this.getPutablePlace(color()).some(([x,y])=>x===this.mouseX&&y===this.mouseY))return console.log("cannot put")
-          this.putOn(this.mouseX, this.mouseY)
-          this.readHistory()
           soket.emit("put",this.roomId,this.mouseX,this.mouseY)
           this.disableClickToPut()
         }
@@ -57,6 +55,17 @@ function App(){
       this.canvas.removeEventListener("click",this.clickEvent)
       setTurn(false)
       return true
+    }
+    drow(fillBackGround = true) {
+      if (!this.canvas) return this;
+      super.drow(fillBackGround)
+      if(myTurn()||opponent()==="")this.getPutablePlace(color()).forEach(([x,y])=>{
+        this.hightlightCell(x,y)
+      })
+      if(!myTurn())this.getPutablePlace(color()*-1+3).forEach(([x,y])=>{
+        this.hightlightCell(x,y,"red")
+      })
+      return this;
     }
   }
 
@@ -107,6 +116,7 @@ function App(){
       let timerId=setInterval(clacWaiting,400)
       soket.once("joined",opp=>{
         setOpponent(opp)
+        othello.drow()
         clearInterval(timerId)
       })
       setState("game")
@@ -206,6 +216,7 @@ function App(){
           <input value="<" type="submit" onClick={before}></input>
           <input readOnly value={hisIndex()}></input>
           <input value=">" type="submit" onClick={next}></input>
+          <a href={window.location.href}>back to home</a>
           </div>
         </div>
     </Match>
