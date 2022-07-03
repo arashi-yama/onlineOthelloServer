@@ -1,4 +1,4 @@
-export class Othello {
+export default class Othello {
   constructor() {
     this.order = 1;
     this.color = [null, 'black', 'white'];
@@ -25,11 +25,8 @@ export class Othello {
       this.mouseY = Math.floor(e.offsetY / this.pixcel);
       if (0 <= this.mouseX <= 8 && 0 <= this.mouseY <= 8) {
         this.putOn(this.mouseX, this.mouseY);
-        this.readHistry();
+        this.readHistory();
       }
-      console.log(
-        '[' + this.history.map((v) => `[${v.join(',')}]`).join(',') + ']'
-      );
     };
     return this;
   }
@@ -163,7 +160,7 @@ export class Othello {
     this.history.push([x, y]);
     return this;
   }
-  readHistry() {
+  readHistory() {
     //historyから最新の盤面を計算する
     this.board = [
       [0, 0, 0, 0, 0, 0, 0, 0],
@@ -187,12 +184,7 @@ export class Othello {
     ];
     for (let i = 0; i < this.history.length; i++) {
       let vs = this.canPutAt(...this.history[i], (i % 2) + 1);
-      if (!vs.map((v) => v[0]).includes(true)) {
-        alert(
-          `cannnot put ${this.color[(i % 2) + 1]} on (${this.history[i][0]},${
-            this.history[i][1]
-          })`
-        );
+      if (!vs.map((v) => v[0]).includes(true)){
         this.history.pop();
         return this;
       }
