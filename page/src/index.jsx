@@ -13,18 +13,20 @@ function App(){
   const [color,setColor]=createSignal(0)
   const [winner,setWinner]=createSignal()
   const [count,setCount]=createSignal(false)
+  const [history,setHistory]=createSignal([
+    [ 5, 4 ], [ 3, 5 ],
+    [ 2, 4 ], [ 5, 3 ],
+    [ 4, 2 ], [ 5, 5 ],
+    [ 6, 4 ], [ 4, 5 ],
+    [ 4, 6 ]
+  ])
+  const [hisIndex,setHisIndex]=createSignal(0)
   const toggle=()=>setCount(()=>!count())
-  const init=()=>{
-    setOpponent("")
-    setRoomId()
-    setTurn(false)
-    setColor(0)
-    setWinner()
-    setCount(false)
-    soket=io()
-  }
+  
   let canvas
   let othello
+  let hisCanvas
+  let hisOthello
 
   class OnlineOthello extends Othello{
     writeOn(canvas){
@@ -60,20 +62,40 @@ function App(){
   }
 
   createEffect(on(state,state=>{
-    if(state!=="game")return
-    const canvasSize=Math.min(innerHeight,innerWidth)*2/3
-    canvas.width=canvasSize
-    canvas.height=canvasSize
-    othello=new OnlineOthello().writeOn(canvas)
-    othello.readHistory().drow()
-    soket.on("history",history=>{
-      othello.history=history
+    if(state==="game"){
+      const canvasSize=Math.min(innerHeight,innerWidth)*2/3
+      canvas.width=canvasSize
+      canvas.height=canvasSize
+      othello=new OnlineOthello().writeOn(canvas)
       othello.readHistory().drow()
-    })
-    soket.on("put",()=>{
-      othello.enableClickToPut()
-    })
+      soket.on("history",history=>{
+        othello.history=history
+        othello.readHistory().drow()
+      })
+      soket.on("put",()=>{
+        othello.enableClickToPut()
+      })
+    }else if(state==="history"){
+      const canvasSize=Math.min(innerHeight,innerWidth)*2/3
+      hisCanvas.width=canvasSize
+      hisCanvas.height=canvasSize
+      hisOthello=new Othello().writeOn(hisCanvas)
+      hisOthello.readHistory().drow()
+    }
   }))
+
+  const next=()=>{
+    if(history().length===hisIndex())return
+    setHisIndex(hisIndex()+1)
+    hisOthello.history=history().slice(0,hisIndex())
+    hisOthello.readHistory()
+  }
+  const before=()=>{
+    if(hisIndex()===0)return
+    setHisIndex(hisIndex()-1)
+    hisOthello.history=history().slice(0,hisIndex())
+    hisOthello.readHistory().drow()
+  }
   
   const buildRoom=()=>{
     const username=document.getElementById("username").value||"Anonymous"
@@ -122,7 +144,16 @@ function App(){
   })
 
   const toHistory=()=>{
-    setStatePre("history")
+    let historyId=document.getElementById("historyId").value
+    if(historyId==="")return
+    historyId=historyId-0
+    if(Number.isNaN(historyId))return
+    setState("history")
+    soket.emit("showHistory",historyId)
+    soket.once("showHistorySuccess",({id,create_at,data})=>{
+      setHistory(data)
+      console.log(id,create_at,data)
+    })
   }
   
   return (
@@ -143,7 +174,7 @@ function App(){
           <input placeholder="passward" id="join_passward"></input>
           <input type="submit" value="join" onClick={joinRoom}></input>
           <h2>Show history</h2>
-          <input id="historyId" placeholder="room id"></input><input type="submit" onClick={toHistory}></input>
+          <input id="historyId" placeholder="room id" type="number"></input><input type="submit" onClick={toHistory}></input>
       </div>
     </Match>
     <Match when={state()==="game"}>
@@ -161,7 +192,19 @@ function App(){
           <h2>your turn</h2>
         </Show>
       </div>
-      <canvas ref={canvas}></canvas>
+      <canvas ref={canvas} id="canvas"></canvas>
+    </Match>
+    <Match when={state()==="history"}>
+        <div>
+          <div>
+            <canvas ref={hisCanvas} style={{ width: "30%", margin: "0 auto" }}></canvas>
+          </div>
+          <div class="center">
+          <input value="<" type="submit" onClick={before}></input>
+          <input readOnly value={hisIndex()}></input>
+          <input value=">" type="submit" onClick={next}></input>
+          </div>
+        </div>
     </Match>
   </Switch>
   )

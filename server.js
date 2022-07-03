@@ -83,6 +83,20 @@ app.use(express.static(__dirname+"/page/dist"))
       rooms.delete(roomId)
       console.log(rooms)
     })
+
+    socket.on("showHistory",roomId=>{
+      console.log(roomId)
+      console.log(typeof roomId)
+
+      if(typeof roomId!=="number"||roomId<0)return socket.emit("shoHistoryFailer")
+      let sql=`select * from history where id=${roomId}`
+      db.each(sql,(err,row)=>{
+        if(err)return console.log(err)
+        if(!row.data)return console.log(row)
+        row.data=row.data.split(" ").map(v=>v.split(",").map(v=>+v))
+        socket.emit("showHistorySuccess",row)
+      })
+    })
   })
   app.get("/", (req, res) => {
     res.sendFile(__dirname+"/page/dist/index.html")
