@@ -11,6 +11,10 @@ if(!fs.existsSync("./history.db")){
 const db=new sqlite3.Database("./history.db")
 const {Room,Rooms}=require("./room.js")
 app.use(express.static(__dirname+"/page/dist"))
+
+db.each("select * from history",(err,rows)=>{
+  console.log(rows)
+})
 !(async function(){
   await new Promise((res,rej)=>{
     db.run("create table if not exists history (id int, create_at date, data string)",(err)=>{
