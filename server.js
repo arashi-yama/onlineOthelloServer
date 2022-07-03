@@ -91,6 +91,7 @@ app.use(express.static(__dirname+"/page/dist"))
       if(typeof roomId!=="number"||roomId<0)return socket.emit("shoHistoryFailer")
       let sql=`select * from history where id=${roomId}`
       db.each(sql,(err,row)=>{
+        console.log(row)
         if(err)return console.log(err)
         if(!row.data)return console.log(row)
         row.data=row.data.split(" ").map(v=>v.split(",").map(v=>+v))
