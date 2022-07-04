@@ -112,6 +112,37 @@ export default class Othello {
     }
     return this;
   }
+
+  drowPiece(){
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (this.board[i][j] === 1) {
+          this.ctx.beginPath();
+          this.ctx.fillStyle = 'black';
+          this.ctx.arc(
+            (j + 0.5) * this.pixcel,
+            (i + 0.5) * this.pixcel,
+            (this.pixcel * 2) / 5,
+            0,
+            Math.PI * 2
+          );
+          this.ctx.fill();
+        } else if (this.board[i][j] === 2) {
+          this.ctx.beginPath();
+          this.ctx.fillStyle = 'white';
+          this.ctx.arc(
+            (j + 0.5) * this.pixcel,
+            (i + 0.5) * this.pixcel,
+            (this.pixcel * 2) / 5,
+            0,
+            Math.PI * 2
+          );
+          this.ctx.fill();
+        }
+      }
+    }
+    return this
+  }
   canPutAt(x, y, color) {
     //上から時計回り
     if (this.at(x, y) !== 0)
@@ -265,5 +296,6 @@ export default class Othello {
       this.pixcel,
       this.pixcel
     );
+    return this
   }
 }

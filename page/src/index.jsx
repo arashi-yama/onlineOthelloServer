@@ -96,13 +96,13 @@ function App(){
     if(history().length===hisIndex())return
     setHisIndex(hisIndex()+1)
     hisOthello.history=history().slice(0,hisIndex())
-    hisOthello.readHistory()
+    hisOthello.readHistory().hightlightCell(...history()[hisIndex()-1],"blue").drowPiece()
   }
   const before=()=>{
     if(hisIndex()===0)return
     setHisIndex(hisIndex()-1)
     hisOthello.history=history().slice(0,hisIndex())
-    hisOthello.readHistory().drow()
+    hisOthello.readHistory().drow().hightlightCell(...history()[hisIndex()-1],"blue").drowPiece()
   }
   
   const buildRoom=()=>{
@@ -162,9 +162,8 @@ function App(){
     historyId=historyId-0
     if(Number.isNaN(historyId))return
     soket.emit("showHistory",historyId)
-    soket.once("showHistorySuccess",({id,create_at,data})=>{
+    soket.once("showHistorySuccess",({id,data})=>{
       setHistory(data)
-      console.log(id,create_at,data)
       setState("history")
     })
   }
