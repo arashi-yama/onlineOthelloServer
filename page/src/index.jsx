@@ -215,7 +215,7 @@ function App(){
           <div class="center">
           <input value="<" type="submit" onClick={before}></input>
           <input readOnly value={hisIndex()}></input>
-          <input value=">" type="submit" onClick={next}></input>
+          <input value=">" type="submit" onClick={next}></input><br></br>
           <a href={window.location.href}>back to home</a>
           </div>
         </div>

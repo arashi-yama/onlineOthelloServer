@@ -1,34 +1,26 @@
+require("dotenv").config()
 const express = require("express")
 const app = express()
 const http = require("http")
 const server = http.createServer(app)
 const io = require("socket.io")(server)
-const sqlite3=require("sqlite3")
-const fs=require("fs")
-if(!fs.existsSync("./history.db")){
-  fs.writeFileSync("./history.db","")
-}
-const db=new sqlite3.Database("./history.db")
 const {Room,Rooms}=require("./room.js")
+const { Client } = require('pg');
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+})
+
 app.use(express.static(__dirname+"/page/dist"))
-
 !(async function(){
-  await new Promise((res,rej)=>{
-    db.run("CREATE TABLE IF NOT EXISTS history (id int, create_at date, data string)",(err)=>{
-      if(err)return rej(err)
-      return res()
-    })
+  await client.connect()
+  client.query("SELECT * FROM history").then(result=>{
+    console.log(result.rows)
   })
-
-  const oldestId=await new Promise((res,rej)=>{
-    db.each("SELECT max(id) FROM history",(err,row)=>{
-      if(err)return rej(err)
-      if(!row)return res(0)
-      res(row["max(id)"])
-    })
-  })
-  
-  
+  await client.query("CREATE TABLE IF NOT EXISTS history (id int, data text)")
+  const oldestId=(await client.query("SELECT max(id) FROM history")).rows[0].max||0
   const rooms=new Rooms(oldestId)
   console.log(rooms)
   io.on('connection', (socket) => {
@@ -77,8 +69,8 @@ app.use(express.static(__dirname+"/page/dist"))
     })
     socket.on("end",roomId => {
       console.log(rooms)
-      let sql=`INSERT INTO history (id,create_at,data) VALUES (${roomId},datetime('now'),"${rooms.get(roomId).history.map(v=>v.join(",")).join(" ")}")`
-      db.run(sql)
+      let sql=`INSERT INTO history (id,data) VALUES (${roomId},'${rooms.get(roomId).history.map(v=>v.join(",")).join(" ")}')`
+      client.query(sql)
       rooms.delete(roomId)
       console.log(rooms)
     })
@@ -89,13 +81,11 @@ app.use(express.static(__dirname+"/page/dist"))
 
       if(typeof roomId!=="number"||roomId<0)return socket.emit("shoHistoryFailer")
       let sql=`SELECT * FROM history WHERE id=${roomId}`
-      db.each(sql,(err,row)=>{
-        console.log(row)
-        if(err)return console.log(err)
-        if(!row.data)return console.log(row)
+      client.query(sql).then(result=>{
+        const row=result.rows[0]
         row.data=row.data.split(" ").map(v=>v.split(",").map(v=>+v))
         socket.emit("showHistorySuccess",row)
-      })
+      }).catch(console.log)
     })
   })
   app.get("/", (req, res) => {
