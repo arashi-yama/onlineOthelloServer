@@ -4,6 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "build":"cd page && npm i && npm run build",
     "building": "cd page && npm run build",
     "start": "cd page && npm run build && cd ../ && node server.js"
   },
