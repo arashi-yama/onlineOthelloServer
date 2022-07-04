@@ -14,8 +14,7 @@
     "express": "^4.17.3",
     "http": "^0.0.1-security",
     "pg": "^8.7.3",
-    "socket.io": "^4.4.1",
-    "sqlite3": "^5.0.8"
+    "socket.io": "^4.4.1"
   },
   "engines": {
     "node": "16.x"
