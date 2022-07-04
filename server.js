@@ -12,19 +12,16 @@ const db=new sqlite3.Database("./history.db")
 const {Room,Rooms}=require("./room.js")
 app.use(express.static(__dirname+"/page/dist"))
 
-db.each("select * from history",(err,rows)=>{
-  console.log(rows)
-})
 !(async function(){
   await new Promise((res,rej)=>{
-    db.run("create table if not exists history (id int, create_at date, data string)",(err)=>{
+    db.run("CREATE TABLE IF NOT EXISTS history (id int, create_at date, data string)",(err)=>{
       if(err)return rej(err)
       return res()
     })
   })
 
   const oldestId=await new Promise((res,rej)=>{
-    db.each("select max(id) from history",(err,row)=>{
+    db.each("SELECT max(id) FROM history",(err,row)=>{
       if(err)return rej(err)
       if(!row)return res(0)
       res(row["max(id)"])
@@ -80,7 +77,7 @@ db.each("select * from history",(err,rows)=>{
     })
     socket.on("end",roomId => {
       console.log(rooms)
-      let sql=`insert into history (id,create_at,data) values (${roomId},datetime('now'),"${rooms.get(roomId).history.map(v=>v.join(",")).join(" ")}")`
+      let sql=`INSERT INTO history (id,create_at,data) VALUES (${roomId},datetime('now'),"${rooms.get(roomId).history.map(v=>v.join(",")).join(" ")}")`
       db.run(sql)
       rooms.delete(roomId)
       console.log(rooms)
@@ -91,7 +88,7 @@ db.each("select * from history",(err,rows)=>{
       console.log(typeof roomId)
 
       if(typeof roomId!=="number"||roomId<0)return socket.emit("shoHistoryFailer")
-      let sql=`select * from history where id=${roomId}`
+      let sql=`SELECT * FROM history WHERE id=${roomId}`
       db.each(sql,(err,row)=>{
         console.log(row)
         if(err)return console.log(err)
