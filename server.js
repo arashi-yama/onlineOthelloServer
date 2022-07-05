@@ -25,6 +25,26 @@ app.use(express.static(__dirname+"/page/dist"))
   console.log(rooms)
   io.on('connection', (socket) => {
     console.log("connected")
+    socket.on("freeroom",({username})=>{
+      const roomId=rooms.findKey(room=>room.roomname===null&&room.users.length===1)
+      if(roomId){
+        const room=rooms.get(roomId)
+        room.addUser({
+          username,
+          userId:socket.id
+        })
+        socket.emit("freeroomSuccess",roomId,false)
+        socket.join(roomId)
+        socket.emit("join",room.users[0].username)
+        io.to(room.users[0].userId).emit("joined", username)
+        io.to(roomId).emit("start")
+      }else{
+        rooms.add(new Room(null,username,socket.id,null))
+        socket.emit("freeroomSuccess",rooms.oldestId,true)
+        socket.join(rooms.oldestId)
+      }
+    })
+
     socket.on('buildroom', ({username, roomname, pass}) => {
       if(rooms.findKey(room=>room.roomname===roomname)!==undefined){
         socket.emit("buildroomFailure", `Cannot build room because ${roomname} has been used`)
@@ -83,6 +103,7 @@ app.use(express.static(__dirname+"/page/dist"))
       let sql=`SELECT * FROM history WHERE id=${roomId}`
       client.query(sql).then(result=>{
         const row=result.rows[0]
+        if(!row)return
         row.data=row.data.split(" ").map(v=>v.split(",").map(v=>+v))
         socket.emit("showHistorySuccess",row)
       }).catch(console.log)

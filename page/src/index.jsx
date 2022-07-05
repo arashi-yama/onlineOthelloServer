@@ -104,6 +104,31 @@ function App(){
     hisOthello.history=history().slice(0,hisIndex())
     hisOthello.readHistory().drow().hightlightCell(...history()[hisIndex()-1],"blue").drowPiece()
   }
+
+  const toFreeRoom=()=>{
+    const username=document.getElementById("username").value||"Anonymous"
+    soket.emit("freeroom",{username})
+    soket.once("freeroomSuccess",(roomId,isHost)=>{
+      if(isHost){
+        let timerId=setInterval(clacWaiting,400)
+        soket.once("joined",opp=>{
+          setOpponent(opp)
+          othello.drow()
+          clearInterval(timerId)
+        })
+      }else{
+        soket.once("join",opp=>{
+          setOpponent(opp)
+          othello.drow()
+        })
+      }
+      setState("game")
+      setColor(isHost?1:2)
+      setTurn(isHost)
+      setRoomId(roomId)
+      othello.roomId=roomId
+    })
+  }
   
   const buildRoom=()=>{
     const username=document.getElementById("username").value||"Anonymous"
@@ -174,6 +199,8 @@ function App(){
       <div style={{"text-align":"center"}}>
         <h1>Online Othello</h1>
         <input id="username" placeholder="your name"></input>
+        <h2>To free room</h2>
+        <input value="go" type="submit" onclick={toFreeRoom}></input>
         <h2>Building a room</h2>
         Setting a passward<input type="checkbox" onClick={toggle}></input><br></br>
         <input id="roomname" placeholder="room name"></input>
